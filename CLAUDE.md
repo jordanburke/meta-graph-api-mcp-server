@@ -4,95 +4,94 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a TypeScript library template designed to be cloned/forked for creating new npm packages. It provides standardized build scripts, modern tooling, and dual module format support (CommonJS + ES modules).
+This is a TypeScript library template designed to be cloned/forked for creating new npm packages. It uses the `ts-builds` toolchain for standardized build scripts and dual module format support (CommonJS + ES modules).
 
-**Template Usage**: See STANDARDIZATION_GUIDE.md for instructions on applying this pattern to other TypeScript projects.
+**Template Usage**: See STANDARDIZATION_GUIDE.md for applying this pattern to other TypeScript projects.
 
 ## Development Commands
 
-### Pre-Checkin Command
+All commands delegate to `ts-builds` for consistency across projects:
 
-- `pnpm validate` - **Main command**: Format, lint, test, and build everything for checkin
+```bash
+pnpm validate        # Main command: format + lint + test + build (use before commits)
 
-### Formatting
+pnpm format          # Format code with Prettier
+pnpm format:check    # Check formatting only
 
-- `pnpm format` - Format code with Prettier (write mode)
-- `pnpm format:check` - Check Prettier formatting without writing
+pnpm lint            # Fix ESLint issues
+pnpm lint:check      # Check ESLint issues only
 
-### Linting
+pnpm test            # Run tests once
+pnpm test:watch      # Run tests in watch mode
+pnpm test:coverage   # Run tests with coverage
 
-- `pnpm lint` - Fix ESLint issues (write mode)
-- `pnpm lint:check` - Check ESLint issues without fixing
+pnpm build           # Production build (outputs to dist/)
+pnpm dev             # Development build with watch mode
 
-### Testing
+pnpm typecheck       # Check TypeScript types
+```
 
-- `pnpm test` - Run tests once
-- `pnpm test:watch` - Run tests in watch mode
-- `pnpm test:coverage` - Run tests with coverage report
-- `pnpm test:ui` - Launch Vitest UI for interactive testing
+### Running a Single Test
 
-### Building
-
-- `pnpm build` - Production build (outputs to `dist/`)
-- `pnpm build:watch` - Watch mode build
-- `pnpm dev` - Development build with watch mode (alias for build:watch)
-
-### Publishing
-
-- `prepublishOnly` - Automatically runs `pnpm validate` before publishing
-
-### Type Checking
-
-- `pnpm ts-types` - Check TypeScript types with tsc
+```bash
+pnpm test -- --testNamePattern="pattern"    # Filter by test name
+pnpm test -- test/specific.spec.ts          # Run specific file
+```
 
 ## Architecture
 
-### Build System
+### Build System: ts-builds + tsdown
 
-- **tsup**: Primary build tool configured in `tsup.config.ts`
-- **Dual Output Directories**:
-  - `lib/` - Development builds (NODE_ENV !== "production", used during `pnpm dev`)
-  - `dist/` - Production builds (NODE_ENV === "production", used for publishing)
-- **Format Support**: Generates both CommonJS (`.js`) and ES modules (`.mjs`)
-- **TypeScript**: Auto-generates `.d.ts` declaration files for both formats
-- **Environment-Based Behavior**:
-  - Production: minified, bundled, no watch
-  - Development: source maps, watch mode, faster builds
+- **ts-builds**: Centralized toolchain package providing all build scripts
+- **tsdown**: Underlying bundler (successor to tsup) configured via `ts-builds/tsdown`
+- **Configuration**: `tsdown.config.ts` imports default config from ts-builds
+- **TypeScript**: `tsconfig.json` extends `ts-builds/tsconfig`
+- **Prettier**: Uses `ts-builds/prettier` shared config
 
-### Testing Framework
+### Output Format
 
-- **Vitest**: Modern test runner with hot reload and coverage
-- **Configuration**: `vitest.config.ts` with Node.js environment
-- **Coverage**: Uses v8 provider with text/json/html reports
+- **dist/**: Production builds containing:
+  - `index.cjs` - CommonJS format
+  - `index.mjs` - ES modules format
+  - `index.d.mts` - TypeScript declarations
+- **lib/**: Development builds (also published)
 
-### Code Quality Tools
+### Package Exports
 
-- **ESLint**: Flat config setup in `eslint.config.mjs` with TypeScript support
-- **Prettier**: Integrated with ESLint for consistent formatting
-- **Import Sorting**: Automatic import organization via `simple-import-sort`
+```json
+{
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  }
+}
+```
 
-### Package Configuration
+### Testing: Vitest
 
-- **Entry Points**: Main source in `src/index.ts`, builds all files in `src/**/*.ts`
-- **Exports**: Supports both `require()` and `import` with proper type definitions
-- **Publishing**:
-  - Configured for npm with public access
-  - Both `lib/` and `dist/` directories are published (see package.json "files" field)
-  - `prepublishOnly` hook ensures full validation before publish
-
-### TypeScript Configuration
-
-- **Strict Mode**: Enabled with some pragmatic exceptions:
-  - `noImplicitAny: false` - Allows implicit any for flexibility
-  - `strictPropertyInitialization: false` - Relaxed for constructor properties
-- **Target**: ESNext for modern JavaScript features
-- **Output**: TypeScript only emits declaration files; tsup handles transpilation
+- Tests located in `test/*.spec.ts`
+- Uses Vitest with configuration from ts-builds
+- Coverage via v8 provider
 
 ## Key Files
 
 - `src/index.ts` - Main library entry point
-- `test/*.spec.ts` - Test files using Vitest
-- `tsup.config.ts` - Build configuration with environment-based settings (line 3 checks NODE_ENV)
-- `vitest.config.ts` - Test configuration with coverage settings
-- `eslint.config.mjs` - Linting rules and TypeScript integration
-- `STANDARDIZATION_GUIDE.md` - Instructions for applying this pattern to other projects
+- `test/*.spec.ts` - Test files
+- `tsdown.config.ts` - Build config (imports from ts-builds)
+- `tsconfig.json` - TypeScript config (extends ts-builds)
+- `.claude/skills/typescript-standards/` - Claude Code skill for applying these standards
+
+## Publishing
+
+```bash
+npm version patch|minor|major
+npm publish --access public
+```
+
+The `prepublishOnly` hook automatically runs `pnpm validate` before publishing.

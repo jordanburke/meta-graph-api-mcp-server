@@ -7,11 +7,11 @@ A modern TypeScript library template with standardized build scripts and tooling
 
 ## Features
 
-- **Modern Build System**: [tsup](https://tsup.egoist.dev/) for fast bundling with TypeScript support
-- **Testing**: [Vitest](https://vitest.dev/) with coverage reporting and UI
+- **Modern Build System**: [ts-builds](https://github.com/jordanburke/ts-builds) + [tsdown](https://tsdown.dev/) for fast bundling
+- **Testing**: [Vitest](https://vitest.dev/) with coverage reporting
 - **Code Quality**: ESLint + Prettier with automatic formatting and fixing
 - **Dual Format**: Outputs both CommonJS and ES modules with proper TypeScript declarations
-- **Standardized Scripts**: Consistent commands across all projects
+- **Standardized Scripts**: Consistent commands via ts-builds across all projects
 
 ## Quick Start
 
@@ -19,14 +19,14 @@ A modern TypeScript library template with standardized build scripts and tooling
 2. **Clone your new repository**
 3. **Install dependencies**: `pnpm install`
 4. **Start developing**: `pnpm dev` (builds with watch mode)
-5. **Before committing**: `pnpm run validate` (format + lint + test + build)
+5. **Before committing**: `pnpm validate` (format + lint + test + build)
 
 ## Development Commands
 
 ### Pre-Checkin Command
 
 ```bash
-pnpm run validate  # 🚀 Main command: format, lint, test, and build everything
+pnpm validate  # Main command: format, lint, test, and build everything
 ```
 
 ### Individual Commands
@@ -44,23 +44,22 @@ pnpm lint:check    # Check ESLint issues without fixing
 pnpm test          # Run tests once
 pnpm test:watch    # Run tests in watch mode
 pnpm test:coverage # Run tests with coverage report
-pnpm test:ui       # Launch Vitest UI
 
 # Building
 pnpm build         # Production build
-pnpm build:watch   # Build with watch mode
-pnpm dev           # Development mode (alias for build:watch)
+pnpm dev           # Development mode with watch
 
 # Type Checking
-pnpm ts-types      # Check TypeScript types
+pnpm typecheck     # Check TypeScript types
 ```
 
 ## Publishing
 
-The template automatically runs `pnpm run validate` before publishing via the `prepublishOnly` script, ensuring your package is properly formatted, linted, tested, and built.
+The template automatically runs `pnpm validate` before publishing via the `prepublishOnly` script.
 
 ```bash
-pnpm publish --access public
+npm version patch|minor|major
+npm publish --access public
 ```
 
 ## Project Structure
@@ -75,7 +74,8 @@ dist/                 # Built output (CommonJS + ES modules + types)
 
 ## Tooling
 
-- **Build**: [tsup](https://tsup.egoist.dev/) - Fast TypeScript bundler
+- **Build**: [ts-builds](https://github.com/jordanburke/ts-builds) - Centralized TypeScript toolchain
+- **Bundler**: [tsdown](https://tsdown.dev/) - Fast TypeScript bundler (successor to tsup)
 - **Test**: [Vitest](https://vitest.dev/) - Fast unit test framework
 - **Lint**: [ESLint](https://eslint.org/) with TypeScript support
 - **Format**: [Prettier](https://prettier.io/) with ESLint integration
@@ -91,7 +91,7 @@ This repository includes a Claude Code skill to help you apply these standards t
 
 - Creating new libraries from this template
 - Applying these standards to existing TypeScript projects
-- Configuring tooling (tsup, Vitest, ESLint, Prettier)
+- Configuring tooling (ts-builds, Vitest, ESLint, Prettier)
 - Setting up dual module format
 
 **Installation** (for use in other projects):
@@ -99,16 +99,13 @@ This repository includes a Claude Code skill to help you apply these standards t
 ```bash
 # Copy the skill to your Claude Code skills directory
 cp -r .claude/skills/typescript-standards ~/.claude/skills/
-
-# Or if using plugins/marketplace
-# See .claude-plugin/marketplace.json for distribution configuration
 ```
 
 **References**:
 
 - [CLAUDE.md](./CLAUDE.md) - Development guidance for this project
 - [STANDARDIZATION_GUIDE.md](./STANDARDIZATION_GUIDE.md) - Guide for applying these patterns to existing projects
-- [.claude/skills/typescript-standards/](./. claude/skills/typescript-standards/) - Complete skill documentation
+- [.claude/skills/typescript-standards/](./.claude/skills/typescript-standards/) - Complete skill documentation
 
 ---
 
