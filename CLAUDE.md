@@ -4,94 +4,197 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a TypeScript library template designed to be cloned/forked for creating new npm packages. It uses the `ts-builds` toolchain for standardized build scripts and dual module format support (CommonJS + ES modules).
-
-**Template Usage**: See STANDARDIZATION_GUIDE.md for applying this pattern to other TypeScript projects.
+A Model Context Protocol (MCP) server that provides comprehensive Meta Graph API integration including Facebook Pages, Instagram Business, content management, and analytics. Built with FastMCP and supports dual transport modes (stdio for Claude Desktop/Cursor, HTTP for remote access).
 
 ## Development Commands
 
-All commands delegate to `ts-builds` for consistency across projects:
+### Essential Commands
+
+- `pnpm validate` - **Pre-checkin**: Format, lint, test, and build everything
+- `pnpm dev` - Build with watch mode for active development
+- `pnpm serve:dev` - Run server with hot reload using tsx
+
+### Testing
+
+- `pnpm test` - Run all tests
+- `pnpm test:watch` - Watch mode for TDD
+- `pnpm test:coverage` - Generate coverage report
+
+### Server Operation
+
+- `pnpm start` - Build and run production server
+- `pnpm serve` - Run built server without rebuild
+- `pnpm inspect` - Launch MCP inspector for debugging tools
+
+### CLI Testing
 
 ```bash
-pnpm validate        # Main command: format + lint + test + build (use before commits)
+# Test with environment variables
+FACEBOOK_APP_ID=xxx FACEBOOK_APP_SECRET=yyy pnpm serve:dev
 
-pnpm format          # Format code with Prettier
-pnpm format:check    # Check formatting only
-
-pnpm lint            # Fix ESLint issues
-pnpm lint:check      # Check ESLint issues only
-
-pnpm test            # Run tests once
-pnpm test:watch      # Run tests in watch mode
-pnpm test:coverage   # Run tests with coverage
-
-pnpm build           # Production build (outputs to dist/)
-pnpm dev             # Development build with watch mode
-
-pnpm typecheck       # Check TypeScript types
-```
-
-### Running a Single Test
-
-```bash
-pnpm test -- --testNamePattern="pattern"    # Filter by test name
-pnpm test -- test/specific.spec.ts          # Run specific file
+# Test CLI flags
+pnpm build && node dist/bin.cjs --help
 ```
 
 ## Architecture
 
-### Build System: ts-builds + tsdown
+### Single-Client Design (vs LinkedIn's Dual-Client)
 
-- **ts-builds**: Centralized toolchain package providing all build scripts
-- **tsdown**: Underlying bundler (successor to tsup) configured via `ts-builds/tsdown`
-- **Configuration**: `tsdown.config.ts` imports default config from ts-builds
-- **TypeScript**: `tsconfig.json` extends `ts-builds/tsconfig`
-- **Prettier**: Uses `ts-builds/prettier` shared config
+Unlike LinkedIn which requires separate clients for Personal and Marketing APIs, Facebook uses a **unified Graph API**. All features (pages, posts, insights, Instagram) operate through a single `MetaGraphClient`:
 
-### Output Format
+```
+MetaGraphClient
+├── Page Management (getMyPages, getPage)
+├── Post Management (createPagePost, getPagePosts, getPost, deletePost)
+├── Comments (getPostComments, replyToComment, deleteComment)
+├── Media Upload (uploadPhoto)
+├── Page Insights (getPageInsights, getPostInsights)
+└── Instagram Business (getInstagramAccount, createInstagramPost, etc.)
+```
 
-- **dist/**: Production builds containing:
-  - `index.cjs` - CommonJS format
-  - `index.mjs` - ES modules format
-  - `index.d.mts` - TypeScript declarations
-- **lib/**: Development builds (also published)
+### MCP Server Structure
 
-### Package Exports
+The main server (`src/index.ts`) follows FastMCP patterns:
 
-```json
-{
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    }
-  }
+- **Setup Phase**: `setupMetaGraphClient()` initializes client with session tokens
+- **Tool Registration**: 20 tools registered with Zod schema validation
+- **Transport Selection**: Environment variable `TRANSPORT_TYPE` controls stdio vs HTTP mode
+- **OAuth Proxy**: FastMCP handles OAuth flow, issuing JWTs that map to Facebook tokens
+
+### Meta Graph API Specifics
+
+**Authentication Flow**:
+
+1. User authorizes via Facebook OAuth
+2. Server receives authorization code
+3. Code exchanged for short-lived token
+4. Short-lived token exchanged for long-lived token (60 days)
+5. Server fetches page access tokens via `/me/accounts`
+6. FastMCP issues JWT mapping to Facebook tokens
+
+**Graph API Version**: v21.0
+
+**API Response Format**: Facebook API returns snake_case, transformed to camelCase in types:
+
+```typescript
+// Raw API response (snake_case)
+type RawInsightMetric = {
+  end_time: string
+  // ...
+}
+
+// Internal type (camelCase)
+type InsightMetric = {
+  endTime: string
+  // ...
 }
 ```
 
-### Testing: Vitest
+### Type System Architecture
 
-- Tests located in `test/*.spec.ts`
-- Uses Vitest with configuration from ts-builds
-- Coverage via v8 provider
+Types in `src/types.ts` are organized by domain:
 
-## Key Files
+- **Session**: MetaSession with user tokens and page tokens map
+- **Pages**: FacebookPage with optional Instagram connection
+- **Posts**: FacebookPost with engagement summaries
+- **Comments**: FacebookComment, InstagramComment
+- **Instagram**: InstagramBusinessAccount, InstagramMedia
+- **Insights**: PageInsights, PostInsights, InstagramInsights
 
-- `src/index.ts` - Main library entry point
-- `test/*.spec.ts` - Test files
-- `tsdown.config.ts` - Build config (imports from ts-builds)
-- `tsconfig.json` - TypeScript config (extends ts-builds)
-- `.claude/skills/typescript-standards/` - Claude Code skill for applying these standards
+**Important**: Formatters (`src/utils/formatters.ts`) convert API responses to user-friendly markdown strings. All MCP tools return formatted strings, not raw objects.
 
-## Publishing
+### Build System (ts-builds)
 
-```bash
-npm version patch|minor|major
-npm publish --access public
+Unlike LinkedIn's tsup setup, this project uses ts-builds + tsdown:
+
+- **Scripts**: Delegate to ts-builds commands (`pnpm validate` → `ts-builds validate`)
+- **Output**: `.cjs`, `.mjs`, `.d.mts` (not `.js`, `.d.ts`)
+- **Config**: `tsdown.config.ts` imports from `ts-builds/tsdown`
+- **TypeScript**: `tsconfig.json` extends `ts-builds/tsconfig`
+
+## Meta Graph API Requirements
+
+### Required OAuth Scopes
+
+**Pages**:
+
+- `pages_show_list` - List managed pages
+- `pages_read_engagement` - Read posts, followers, metadata
+- `pages_manage_posts` - Create/edit/delete posts
+- `pages_read_user_content` - Read user comments on page
+- `pages_manage_engagement` - Reply to/delete comments
+- `read_insights` - Page and post analytics
+
+**Instagram**:
+
+- `instagram_basic` - Read Instagram profile and media
+- `instagram_content_publish` - Create organic posts
+- `instagram_manage_comments` - Manage comments
+- `instagram_manage_insights` - Get Instagram insights
+
+### Rate Limits
+
+- Standard access: Varies by endpoint
+- Page insights: 200 calls per hour
+- Post creation: Based on app tier
+
+### Environment Variables
+
+**Required**:
+
+- `FACEBOOK_APP_ID`
+- `FACEBOOK_APP_SECRET`
+
+**Server Config**:
+
+- `TRANSPORT_TYPE`: `stdio` (Claude Desktop/Cursor) or `http` (default)
+- `PORT`: HTTP server port (default: 3000)
+- `HOST`: Bind address (default: localhost)
+- `BASE_URL`: Public URL for OAuth callbacks (default: `http://localhost:PORT`)
+
+## Testing Strategy
+
+- Tests use Vitest with Node.js environment
+- Focus on formatters and type transformations (API calls require live credentials)
+- Test files in `test/*.spec.ts`
+
+## Common Patterns
+
+### Adding a New MCP Tool
+
+1. Define parameter schema with Zod in `src/index.ts`
+2. Get client via `context.session` tokens
+3. Initialize client and call method
+4. Format response using utilities from `src/utils/formatters.ts`
+5. Return formatted string for user display
+
+### Handling API Response Transformation
+
+Facebook API uses snake_case; internal types use camelCase:
+
+```typescript
+// Transform in client method
+return {
+  pageId,
+  metrics: (response.data || []).map((m) => ({
+    name: m.name,
+    values: m.values.map((v) => ({ value: v.value, endTime: v.end_time })),
+  })),
+}
 ```
 
-The `prepublishOnly` hook automatically runs `pnpm validate` before publishing.
+### Transport Mode Considerations
+
+- **stdio mode**: Single request/response, for Claude Desktop/Cursor
+- **HTTP mode**: Supports SSE streaming at `/sse` endpoint
+- Authentication handled by FastMCP's OAuth proxy in both modes
+
+## Key Differences from LinkedIn MCP
+
+| Aspect        | LinkedIn                   | Meta Graph               |
+| ------------- | -------------------------- | ------------------------ |
+| Clients       | 2 (Personal + Marketing)   | 1 (Unified)              |
+| API Protocol  | RESTli                     | Standard REST            |
+| Entity IDs    | URNs (`urn:li:person:xxx`) | Simple IDs               |
+| Build System  | tsup                       | ts-builds + tsdown       |
+| Output Format | `.js`, `.d.ts`             | `.cjs`, `.mjs`, `.d.mts` |

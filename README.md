@@ -1,112 +1,243 @@
-## typescript-library-template
+# Meta Graph API MCP Server
 
-[![Node.js CI](https://github.com/jordanburke/typescript-library-template/actions/workflows/node.js.yml/badge.svg)](https://github.com/jordanburke/typescript-library-template/actions/workflows/node.js.yml)
-[![CodeQL](https://github.com/jordanburke/typescript-library-template/actions/workflows/codeql.yml/badge.svg)](https://github.com/jordanburke/typescript-library-template/actions/workflows/codeql.yml)
-
-A modern TypeScript library template with standardized build scripts and tooling.
+A Model Context Protocol (MCP) server for Meta Graph API - Facebook Pages, Instagram Business, content management, and analytics.
 
 ## Features
 
-- **Modern Build System**: [ts-builds](https://github.com/jordanburke/ts-builds) + [tsdown](https://tsdown.dev/) for fast bundling
-- **Testing**: [Vitest](https://vitest.dev/) with coverage reporting
-- **Code Quality**: ESLint + Prettier with automatic formatting and fixing
-- **Dual Format**: Outputs both CommonJS and ES modules with proper TypeScript declarations
-- **Standardized Scripts**: Consistent commands via ts-builds across all projects
+- **Facebook Pages**: List pages, create/manage posts, moderate comments
+- **Instagram Business**: Manage connected Instagram accounts, create posts, view insights
+- **Analytics**: Page insights, post engagement metrics, Instagram statistics
+- **Media Upload**: Upload photos to Facebook and Instagram
+- **OAuth 2.0**: Automatic token exchange and long-lived token management
 
 ## Quick Start
 
-1. **Use this template** to create a new repository
-2. **Clone your new repository**
-3. **Install dependencies**: `pnpm install`
-4. **Start developing**: `pnpm dev` (builds with watch mode)
-5. **Before committing**: `pnpm validate` (format + lint + test + build)
+### 1. Create a Meta Developer App
+
+1. Go to [Meta for Developers](https://developers.facebook.com/apps/)
+2. Click **Create App** and select **Business** app type
+3. Add the **Facebook Login** product
+4. Configure OAuth redirect URI: `http://localhost:3000/oauth/callback`
+5. Note your **App ID** and **App Secret**
+
+### 2. Configure Permissions
+
+In your app's App Review section, request these permissions (all available with Standard access):
+
+**Pages:**
+
+- `pages_show_list` - List managed pages
+- `pages_read_engagement` - Read posts, followers, metadata
+- `pages_manage_posts` - Create/edit/delete posts
+- `pages_read_user_content` - Read user comments on page
+- `pages_manage_engagement` - Reply to/delete comments
+- `read_insights` - Page and post analytics
+
+**Instagram:**
+
+- `instagram_basic` - Read Instagram profile and media
+- `instagram_content_publish` - Create organic posts
+- `instagram_manage_comments` - Manage comments
+- `instagram_manage_insights` - Get Instagram insights
+
+### 3. Install and Configure
+
+```bash
+# Clone the repository
+git clone https://github.com/jordanburke/meta-graph-api-mcp-server.git
+cd meta-graph-api-mcp-server
+
+# Install dependencies
+pnpm install
+
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your credentials
+```
+
+### 4. Environment Variables
+
+```bash
+# Required
+FACEBOOK_APP_ID=your_app_id
+FACEBOOK_APP_SECRET=your_app_secret
+
+# Server Configuration
+TRANSPORT_TYPE=http    # "http" for web/remote, "stdio" for Claude Desktop
+PORT=3000
+HOST=localhost
+BASE_URL=http://localhost:3000
+```
+
+### 5. Run the Server
+
+```bash
+# Development (hot reload)
+pnpm serve:dev
+
+# Production
+pnpm start
+```
+
+## MCP Tools (20 total)
+
+### Connection & Pages
+
+| Tool              | Description                     |
+| ----------------- | ------------------------------- |
+| `test_connection` | Test server connection          |
+| `get_my_pages`    | List all managed Facebook pages |
+| `get_page`        | Get detailed page information   |
+
+### Posts
+
+| Tool               | Description                               |
+| ------------------ | ----------------------------------------- |
+| `create_page_post` | Create a post (text, link, or with photo) |
+| `get_page_posts`   | List recent posts from a page             |
+| `get_post`         | Get a single post with engagement         |
+| `delete_post`      | Delete a post                             |
+
+### Comments
+
+| Tool                | Description             |
+| ------------------- | ----------------------- |
+| `get_post_comments` | List comments on a post |
+| `reply_to_comment`  | Reply to a comment      |
+| `delete_comment`    | Delete a comment        |
+
+### Media
+
+| Tool           | Description         |
+| -------------- | ------------------- |
+| `upload_photo` | Upload photo by URL |
+
+### Analytics
+
+| Tool                | Description                                          |
+| ------------------- | ---------------------------------------------------- |
+| `get_page_insights` | Page-level analytics (impressions, engagement, fans) |
+| `get_post_insights` | Post engagement metrics                              |
+
+### Instagram Business
+
+| Tool                         | Description                             |
+| ---------------------------- | --------------------------------------- |
+| `get_instagram_account`      | Get linked Instagram Business account   |
+| `get_instagram_media`        | List Instagram posts                    |
+| `create_instagram_post`      | Create Instagram post (image + caption) |
+| `get_instagram_comments`     | List comments on Instagram media        |
+| `reply_to_instagram_comment` | Reply to Instagram comment              |
+| `get_instagram_insights`     | Instagram account analytics             |
+
+## Claude Desktop Configuration
+
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "meta-graph-api": {
+      "command": "node",
+      "args": ["/path/to/meta-graph-api-mcp-server/dist/bin.cjs"],
+      "env": {
+        "FACEBOOK_APP_ID": "your_app_id",
+        "FACEBOOK_APP_SECRET": "your_app_secret",
+        "TRANSPORT_TYPE": "stdio"
+      }
+    }
+  }
+}
+```
+
+## Authentication Flow
+
+The server implements a full OAuth 2.0 flow:
+
+1. **Authorization**: User visits `/oauth/authorize` and authenticates with Facebook
+2. **Code Exchange**: Server exchanges authorization code for short-lived token
+3. **Token Extension**: Short-lived token exchanged for long-lived token (60 days)
+4. **Page Tokens**: Server fetches page access tokens via `/me/accounts`
+5. **Session Management**: FastMCP issues JWTs that map to Facebook tokens
 
 ## Development Commands
 
-### Pre-Checkin Command
-
 ```bash
-pnpm validate  # Main command: format, lint, test, and build everything
-```
+# Pre-checkin (format, lint, test, build)
+pnpm validate
 
-### Individual Commands
-
-```bash
-# Formatting
-pnpm format        # Format code with Prettier
-pnpm format:check  # Check formatting without writing
-
-# Linting
-pnpm lint          # Fix ESLint issues
-pnpm lint:check    # Check ESLint issues without fixing
-
-# Testing
-pnpm test          # Run tests once
-pnpm test:watch    # Run tests in watch mode
-pnpm test:coverage # Run tests with coverage report
-
-# Building
+# Individual commands
+pnpm format        # Format code
+pnpm lint          # Fix lint issues
+pnpm test          # Run tests
 pnpm build         # Production build
-pnpm dev           # Development mode with watch
+pnpm dev           # Watch mode
 
-# Type Checking
-pnpm typecheck     # Check TypeScript types
-```
-
-## Publishing
-
-The template automatically runs `pnpm validate` before publishing via the `prepublishOnly` script.
-
-```bash
-npm version patch|minor|major
-npm publish --access public
+# Server
+pnpm start         # Build and run
+pnpm serve         # Run built server
+pnpm serve:dev     # Hot reload development
+pnpm inspect       # MCP inspector for debugging
 ```
 
 ## Project Structure
 
 ```
 src/
-├── index.ts          # Main library entry point
+├── index.ts                    # MCP server with OAuth proxy
+├── bin.ts                      # CLI entry point
+├── types.ts                    # Type definitions
+├── client/
+│   └── meta-graph-client.ts    # Meta Graph API client
+└── utils/
+    └── formatters.ts           # Markdown formatters
 test/
-├── *.spec.ts         # Test files
-dist/                 # Built output (CommonJS + ES modules + types)
+└── formatters.spec.ts          # Formatter tests
 ```
 
-## Tooling
+## API Reference
 
-- **Build**: [ts-builds](https://github.com/jordanburke/ts-builds) - Centralized TypeScript toolchain
-- **Bundler**: [tsdown](https://tsdown.dev/) - Fast TypeScript bundler (successor to tsup)
-- **Test**: [Vitest](https://vitest.dev/) - Fast unit test framework
-- **Lint**: [ESLint](https://eslint.org/) with TypeScript support
-- **Format**: [Prettier](https://prettier.io/) with ESLint integration
-- **Package Manager**: [pnpm](https://pnpm.io/) for fast, efficient installs
+### Graph API Version
 
-## Claude Code Skill
+The server uses Meta Graph API **v21.0**.
 
-This repository includes a Claude Code skill to help you apply these standards to other projects:
+### Rate Limits
 
-**Location**: `.claude/skills/typescript-standards/`
+- Standard access: Varies by endpoint
+- Page insights: 200 calls per hour
+- Post creation: Based on app tier
 
-**Usage**: When using Claude Code, the skill automatically provides guidance for:
+### Error Handling
 
-- Creating new libraries from this template
-- Applying these standards to existing TypeScript projects
-- Configuring tooling (ts-builds, Vitest, ESLint, Prettier)
-- Setting up dual module format
+All errors return descriptive messages:
 
-**Installation** (for use in other projects):
-
-```bash
-# Copy the skill to your Claude Code skills directory
-cp -r .claude/skills/typescript-standards ~/.claude/skills/
+```
+Meta API Error [190]: Invalid OAuth access token
+Meta API Error [100]: (#100) Pages Public Content Access requires...
 ```
 
-**References**:
+## Troubleshooting
 
-- [CLAUDE.md](./CLAUDE.md) - Development guidance for this project
-- [STANDARDIZATION_GUIDE.md](./STANDARDIZATION_GUIDE.md) - Guide for applying these patterns to existing projects
-- [.claude/skills/typescript-standards/](./.claude/skills/typescript-standards/) - Complete skill documentation
+### "Invalid OAuth access token"
 
----
+- Token may have expired (long-lived tokens last 60 days)
+- Re-authenticate through the OAuth flow
 
-_This template is based on the earlier work of https://github.com/orabazu/tsup-library-template but updated with modern tooling and standardized scripts._
+### "Pages Public Content Access requires..."
+
+- Your app needs App Review for public page access
+- For testing, add yourself as a tester/admin on the app
+
+### Instagram account not found
+
+- Ensure the Facebook Page has a connected Instagram Business Account
+- Instagram must be a Business or Creator account (not Personal)
+
+## License
+
+MIT
+
+## Related Projects
+
+- [linkedin-api-mcp-server](https://github.com/jordanburke/linkedin-api-mcp-server) - LinkedIn API MCP server
