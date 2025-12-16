@@ -186,7 +186,7 @@ return {
 ### Transport Mode Considerations
 
 - **stdio mode**: Single request/response, for Claude Desktop/Cursor
-- **HTTP mode**: Supports SSE streaming at `/sse` endpoint
+- **HTTP mode**: Uses HTTP streaming at `/mcp` endpoint (FastMCP standard)
 - Authentication handled by FastMCP's OAuth proxy in both modes
 
 ## Key Differences from LinkedIn MCP
