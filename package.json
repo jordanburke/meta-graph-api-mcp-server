@@ -41,7 +41,7 @@
     "serve:dev": "tsx watch src/index.ts"
   },
   "devDependencies": {
-    "@types/node": "^24.10.4",
+    "@types/node": "^25.0.2",
     "ts-builds": "^1.2.3",
     "tsdown": "^0.18.0",
     "tsx": "^4.21.0"
