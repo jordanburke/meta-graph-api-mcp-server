@@ -131,9 +131,72 @@ pnpm start
 | `reply_to_instagram_comment` | Reply to Instagram comment              |
 | `get_instagram_insights`     | Instagram account analytics             |
 
-## Claude Desktop Configuration
+## Claude Desktop / Claude Code Configuration
 
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+### Option 1: npx (Recommended)
+
+No installation required - runs directly from npm:
+
+**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "meta-graph-api": {
+      "command": "npx",
+      "args": ["-y", "meta-graph-api-mcp-server"],
+      "env": {
+        "FACEBOOK_APP_ID": "your_app_id",
+        "FACEBOOK_APP_SECRET": "your_app_secret",
+        "TRANSPORT_TYPE": "stdio"
+      }
+    }
+  }
+}
+```
+
+**Claude Code** (`.mcp.json` in your project):
+
+```json
+{
+  "mcpServers": {
+    "meta-graph": {
+      "command": "npx",
+      "args": ["-y", "meta-graph-api-mcp-server"],
+      "env": {
+        "FACEBOOK_APP_ID": "your_app_id",
+        "FACEBOOK_APP_SECRET": "your_app_secret",
+        "TRANSPORT_TYPE": "stdio"
+      }
+    }
+  }
+}
+```
+
+### Option 2: HTTP Mode (For Development)
+
+Run the server separately and connect via HTTP. Useful when developing or debugging:
+
+1. Start the server:
+```bash
+FACEBOOK_APP_ID=xxx FACEBOOK_APP_SECRET=yyy pnpm serve:dev
+```
+
+2. Configure MCP to connect:
+```json
+{
+  "mcpServers": {
+    "meta-graph": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+### Option 3: Local Installation
+
+If you prefer a local installation:
 
 ```json
 {
