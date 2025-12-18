@@ -178,11 +178,13 @@ No installation required - runs directly from npm:
 Run the server separately and connect via HTTP. Useful when developing or debugging:
 
 1. Start the server:
+
 ```bash
 FACEBOOK_APP_ID=xxx FACEBOOK_APP_SECRET=yyy pnpm serve:dev
 ```
 
 2. Configure MCP to connect:
+
 ```json
 {
   "mcpServers": {
