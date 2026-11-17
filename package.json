@@ -24,6 +24,7 @@
   "mcpName": "io.github.jordanburke.meta-graph-api-mcp-server",
   "scripts": {
     "validate": "ts-builds validate",
+    "ci": "ts-builds ci",
     "format": "ts-builds format",
     "format:check": "ts-builds format:check",
     "lint": "ts-builds lint",
@@ -34,7 +35,7 @@
     "test:coverage": "ts-builds test:coverage",
     "build": "ts-builds build",
     "dev": "ts-builds dev",
-    "prepublishOnly": "pnpm validate",
+    "prepublishOnly": "pnpm run ci",
     "inspect": "pnpm build && npx @modelcontextprotocol/inspector dist/index.cjs",
     "start": "pnpm build && node dist/index.cjs",
     "serve": "node dist/index.cjs",
@@ -42,7 +43,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.4",
-    "ts-builds": "^1.2.3",
+    "ts-builds": "^4.7.0",
     "tsdown": "^0.18.0",
     "tsx": "^4.21.0"
   },
@@ -68,5 +69,5 @@
     "dist"
   ],
   "prettier": "ts-builds/prettier",
-  "packageManager": "pnpm@10.34.5+sha512.a4ee05f2f73658255bd6a89859c065a45c28a57daefae2c893a168ee2b73168c37b91e83e57ea67654ad03f03031746430e8bce38e362e042605fb8abc80192e"
+  "packageManager": "pnpm@12.21.0+sha512.66fd8278ee28935ce951792d34367ff3af5c432a2756445823029533835b8da529bbe0be5130afd56ed0713fb8789e47bad82d93bd5ae2fe54b15562d6276ef0"
 }
