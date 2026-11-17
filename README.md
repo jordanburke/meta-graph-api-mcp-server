@@ -233,6 +233,7 @@ The server implements a full OAuth 2.0 flow:
 pnpm validate
 
 # Individual commands
+pnpm run ci    # validate's checks without fixing, as CI runs them (type `run`: `pnpm ci` is a clean install)
 pnpm format        # Format code
 pnpm lint          # Fix lint issues
 pnpm test          # Run tests
