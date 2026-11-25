@@ -307,3 +307,7 @@ MIT
 ## Related Projects
 
 - [linkedin-api-mcp-server](https://github.com/jordanburke/linkedin-api-mcp-server) - LinkedIn API MCP server
+
+---
+
+Maintained by [Jordan Burke](https://github.com/jordanburke) · **Affiliated with <a href="https://sapientsai.com/"><img src="https://sapientsai.com/images/logo.svg" alt="" width="20" style="vertical-align: middle;"> SapientsAI</a>**
